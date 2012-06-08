@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Elevator Demo</title>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+		<script src="lib/underscore-min.js"></script>
+		<script src="lib/backbone.js"></script>
+		<link rel="stylesheet" href="css/style.css" />
+	</head>
+	<body>
+		<div id="building">
+			<section class="building">
+				<h1>Floors</h1>
+				<ul id="floors"></ul>
+			</section>
+			<section class="logs">
+				<h1>Elevators</h1>
+				<ol id="elevators"></ol>
+				<h1>Activity Log</h1>
+				<ul id="queue"></ul>
+			</section>
+			<section class="stats">
+				<h1>Stats</h1>
+				<div id="stats"></div>
+			</section>
+		</div>
+		
+		<!-- templates -->
+		<script type="text/template" id="floor-template">
+			<div class="floor <%= floorNumber %>">
+				<span class="floorNumber"><%= floorNumber %></span>
+				<input type="button" value="^" class="up" <% if (top === true) { %>disabled <% } %> />
+				<input type="button" value="v" class="down" <% if (floorNumber === 1) { %> disabled <% } %> />
+				<span class="elevators"></span>
+			</div>
+		</script>
+		<script type="text/template" id="elevator-template">
+			Id: <%= modelData.cid %><br/>
+			Status: <%= modelData.state %><br/>
+			Floor: <%= modelData.floor %><br/>
+			Direction: <%= modelData.direction %><br/>
+			Queue: <%= JSON.stringify(modelData.queue) %><br/>
+			Travel time: <%= modelData.travelTime %><br/>
+			Deliveries: <%= modelData.deliveries %>
+		</script>
+		<script type="text/template" id="elevator-indicator-template">
+			<span id="elevator_<%= cid %>" class="indicator <%= direction %>"><%= cid %><% if (loading) { %>*<% } %></span>
+		</script>
+		<script type="text/template" id="log-entry">
+			<li>[<%= command.floor %>,<%= command.direction %>] ==> <%= ev.cid %> (<%= cost %>ms)</li> 
+		</script>
+		<!--script type="text/template" id="stats-template">
+			Total Travel Time: <%= totalTravelTime %> (<%= travelPercentage %>%)<br/>
+			Total Deliveries: <%= totalDeliveries %>
+		</script-->
+		<!-- Scripts -->
+		<script src="src/Elevator.js"></script>
+		<script src="src/Building.js"></script>
+	</body>	
+</html>

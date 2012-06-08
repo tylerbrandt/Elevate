@@ -1,0 +1,36 @@
+.elevators {
+	display: inline;
+	position: relative;
+}
+
+.building, .logs, .stats {
+	float: left;
+	width: 350px;
+}
+
+#floors {
+	list-style-type: none;
+}
+
+#floors .floorNumber {
+	display: inline-block;
+	width: 25px;
+	font-family: sans-serif;
+	text-align: right;
+}
+
+.indicator {
+	position: absolute;
+	display: inline-block;
+	width: 40px;
+}
+
+.indicator.UP:after {
+	content: "^";
+	font-family: sans-serif;
+}
+
+.indicator.DOWN:after {
+	content: "v";
+	font-family: sans-serif;
+}
