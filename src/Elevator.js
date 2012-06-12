@@ -34,45 +34,72 @@ var Elevator = Backbone.Model.extend({
 	enqueue: function(command) {
 		var q, qpos;
 		
-		qpos = this.selectQueuePosition(command).pos;
+		qpos = this.selectQueuePosition(command);
 
 		if(qpos !== -1) {
 			q = this.get("queue");
 			q.splice(qpos, 0, command);
+			this.set("queue", q);
+			this.trigger('change');
 		}
 		
-		this.set("queue", q);
-		this.trigger('change');
-
-		if(this.get('state') === Elevator.STATE.IDLE) {
-			this.start();
-		}
 	},
 
 	// this function also used to calculate cost of inserting
-	selectQueuePosition: function(command) {
+	selectQueuePosition: function(command, calcCost) {
 		var i, q = this.get('queue'), 
-			timePerFloor = this.get('timeout'), lastFloor = this.get('floor'),
-			travelTime = 0;
+			timePerFloor = this.get('timeout'), 
+			lastFloor = this.get('floor'), 
+			// any elevator queue should only have 2 directions at any given time
+			lastDirection = q.length > 0 ? q[0].direction : command.direction,
+			travelTime = 0,
+			debug = false;
+
+		if (typeof calcCost == 'undefined') {
+			calcCost = false;
+		}
+
+		if (debug) {
+			console.log("inserting ", command, "into", q);
+		}
+
 		for (i = 0; i < q.length; i++) {
-			if (q[i].direction !== command.direction) {
+			if (debug) {
+				console.log("examining command:",q[i]);
+			}
+			if (lastDirection === q[i].direction && q[i].direction !== command.direction) {
+				// this portion of the queue is traveling in the wrong direction
 				travelTime += timePerFloor * Math.abs(q[i].floor - lastFloor);
 				lastFloor = q[i].floor;
+				if (debug) {
+					console.log("Wrong direction, continuing...");
+				}
 				continue;
+			} else if(q[i].direction === command.direction) {
+				if (command.direction === Elevator.DIRECTION.UP && command.floor > q[i].floor) {
+					travelTime += timePerFloor * Math.abs(q[i].floor - lastFloor);
+					lastFloor = q[i].floor;
+					if (debug) {
+						console.log(command.floor, ">", q[i].floor, ", continuing...");
+					}
+					continue;
+				} else if (command.direction === Elevator.DIRECTION.DOWN && command.floor < q[i].floor) {
+					travelTime += timePerFloor * Math.abs(q[i].floor - lastFloor);
+					lastFloor = q[i].floor;
+					if (debug) {
+						console.log(command.floor, "<", q[i].floor, ", continue...");
+					}
+					continue;
+				}
+				if(command.floor === q[i].floor) {
+					// no need to duplicate commands
+					if (debug) {
+						console.log(command.floor, " already exists, abort");
+					}
+					return -1;
+				}
 			}
-			if (command.direction === Elevator.DIRECTION.UP && command.floor > q[i].floor) {
-				travelTime += timePerFloor * Math.abs(q[i].floor - lastFloor);
-				lastFloor = q[i].floor;
-				continue;
-			} else if (command.direction === Elevator.DIRECTION.DOWN && command.floor < q[i].floor) {
-				travelTime += timePerFloor * Math.abs(q[i].floor - lastFloor);
-				lastFloor = q[i].floor;
-				continue;
-			}
-			if(command.floor === q[i].floor) {
-				// no need to duplicate commands
-				return { pos: -1, cost: 0 };
-			}
+			
 			break;
 		}
 
@@ -80,7 +107,10 @@ var Elevator = Backbone.Model.extend({
 
 		// cost is # of stops + travelTime
 		cost = i * this.get('loadTime') + travelTime;
-		return { pos: i, cost: cost };
+		if (calcCost) {
+			return cost;
+		}
+		return i;
 	},
 
 	start: function() {
