@@ -23,10 +23,14 @@ var Elevator = Backbone.Model.extend({
 
 		this.on('all', function(ev, floor) {
 			if(ev in Elevator.DIRECTION) {
+				//console.log("enqueue: ", floor, ev);
 				this.enqueue({
 					floor: floor,
 					direction: Elevator.DIRECTION[ev]
 				});
+				if(this.get('state') === Elevator.STATE.IDLE) {
+					this.start();
+				}
 			}
 		});
 	},
@@ -144,7 +148,8 @@ var Elevator = Backbone.Model.extend({
 			deliveries = this.get('deliveries'),
 			travelTime = this.get('travelTime'),
 			direction = this.get('direction'),
-			floorRange, destFloor;
+			floorRange, destFloor,
+			building = this.get('building');
 		if(s === Elevator.STATE.RUNNING) {
 			if(this.get('loading') === true) {
 				// spawn a random command (somebody pushed a button)
@@ -203,7 +208,9 @@ var Elevator = Backbone.Model.extend({
 						loading: true
 					});
 
-					
+					building.trigger('elevator:update', {
+						deliveries: 1
+					});
 				}
 			
 			}
@@ -212,6 +219,11 @@ var Elevator = Backbone.Model.extend({
 			this.set({
 				travelTime: travelTime + timeout
 			});
+
+			building.trigger('elevator:update', {
+				travelTime: timeout
+			});
+
 			setTimeout(this.recall(), timeout);
 			
 		} else if(q.length > 0) {

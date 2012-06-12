@@ -34,7 +34,10 @@ var Building = Backbone.Model.extend({
 	defaults: function() {
 		return {
 			numFloors: 15,
-			numElevators: 3
+			numElevators: 3,
+			totalTravelTime: 0,
+			totalDeliveries: 0,
+			travelAverage: 0
 		};
 	},
 
@@ -46,28 +49,28 @@ var Building = Backbone.Model.extend({
 		_(this.get('numElevators')).times(function(i) {
 			this.Elevators.add(new Elevator({ 
 				elevatorNumber: i,
-				topFloor: this.get('numFloors')
+				topFloor: this.get('numFloors'),
+				building: this
 			}));
 		}, this);
 
 		this.on('all', function(ev, floor) {
-			var nearestElevator = this.nearestElevator(ev, floor);
-			$('#queue').append(_.template($("#log-entry").html(), { 
-				command: { floor: floor, direction: ev },
-				ev: nearestElevator.ev,
-				cost: nearestElevator.cost 
-			}));
-			nearestElevator.ev.trigger(ev, floor);
+			var nearestElevator;
+			if (ev in Elevator.DIRECTION) {
+
+				nearestElevator = this.nearestElevator(ev, floor);
+				//if(nearestElevator !== null) {
+				$('#queue').append(_.template($("#log-entry").html(), { 
+					command: { floor: floor, direction: ev },
+					ev: nearestElevator.ev,
+					cost: nearestElevator.cost 
+				}));
+				nearestElevator.ev.trigger(ev, floor);	
+				//}
+				
+			}
 		});
 
-		// stats
-		/*
-		this.set({
-			totalTravelTime: 0,
-			totalDeliveries: 0,
-			travelPercentage: 0
-		});
-*/
 	},
 
 	addFloors: function(numFloors) {
@@ -92,15 +95,15 @@ var Building = Backbone.Model.extend({
 	nearestElevator: function(ev, floor) {
 		var nearest = null, cost, bestCost;
 
-		console.log("Computing cost for " + ev + ":" + floor);
+		//console.log("Computing cost for " + ev + ":", floor);
 
 		this.Elevators.each(function(elevator) {
 			cost = elevator.selectQueuePosition({
 				floor: floor,
 				direction: Elevator.DIRECTION[ev]
-			}).cost;
+			}, true);
 
-			console.log(cost);
+			//console.log(cost);
 
 			if(nearest === null || cost < bestCost) {
 				nearest = elevator;
@@ -110,18 +113,32 @@ var Building = Backbone.Model.extend({
 
 		return { ev: nearest, cost: bestCost };
 	},
+
+	updateStats: function(data) {
+		//console.log(data);	
+		var travelTime = data.travelTime || 0,
+			deliveries = data.deliveries || 0,
+			totalTravelTime = this.get('totalTravelTime') + travelTime,
+			totalDeliveries = this.get('totalDeliveries') + deliveries,
+			travelAverage = totalDeliveries === 0 ? totalTravelTime : totalTravelTime / totalDeliveries;
+		this.set({
+			totalTravelTime: totalTravelTime,
+			totalDeliveries: totalDeliveries,
+			travelAverage: travelAverage
+		});
+	}
 });
 
 var BuildingView = Backbone.View.extend({
 	el: $('#building'),
-	//statsTemplate: _.template($("#stats-template").html()),
+	statsTemplate: _.template($("#stats-template").html()),
 
 	initialize: function() {
 		this.model = new Building;
 		this.addFloors();
 		this.addElevators();
 
-		//this.model.on('change', this.updateStats, this);
+		this.model.on('elevator:update', this.updateStats, this);
 	},
 	addFloors: function() {
 		this.model.Floors.each(function(floor) {
@@ -135,14 +152,13 @@ var BuildingView = Backbone.View.extend({
 			elevatorView = new ElevatorView({model: elevator});
 			this.$el.find('#elevators').append(elevatorView.render().el);
 		}, this);
-	}
+	},
 
-	/*
-	updateStats: function() {
+	updateStats: function(data) {
+		this.model.updateStats(data);
 		$("#stats").html(this.statsTemplate(this.model.toJSON()));
 		return this;
 	}
-	*/
 });
 
 var building = new BuildingView;

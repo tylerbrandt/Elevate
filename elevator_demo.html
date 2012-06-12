@@ -49,10 +49,10 @@
 		<script type="text/template" id="log-entry">
 			<li>[<%= command.floor %>,<%= command.direction %>] ==> <%= ev.cid %> (<%= cost %>ms)</li> 
 		</script>
-		<!--script type="text/template" id="stats-template">
-			Total Travel Time: <%= totalTravelTime %> (<%= travelPercentage %>%)<br/>
+		<script type="text/template" id="stats-template">
+			Total Travel Time: <%= totalTravelTime / 1000 %>s (Avg: <%= travelAverage / 1000 %>s)<br/>
 			Total Deliveries: <%= totalDeliveries %>
-		</script-->
+		</script>
 		<!-- Scripts -->
 		<script src="src/Elevator.js"></script>
 		<script src="src/Building.js"></script>
